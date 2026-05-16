@@ -78,11 +78,15 @@ function DroppableColumn({
   config,
   boardId,
   sortedColumns,
+  onDeleteJob,
+  onDeleteColumn, // Received delete column function
 }: {
   column: Column;
   config: ColConfig;
   boardId: string;
   sortedColumns: Column[];
+  onDeleteJob: (jobId: string, colId: string) => Promise<void>;
+  onDeleteColumn: (columnId: string, boardId: string) => Promise<void>;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: column._id,
@@ -91,6 +95,13 @@ function DroppableColumn({
       columnId: column._id,
     },
   });
+
+  const handleDeleteClick = () => {
+    const confirmation = confirm(`Are you sure you want to delete the column "${column.name}"? This will delete all applications inside it.`);
+    if (confirmation) {
+      onDeleteColumn(column._id, boardId);
+    }
+  };
 
   const sortedJobs =
     column.jobApplications?.sort((a, b) => a.order - b.order) || [];
@@ -117,7 +128,11 @@ function DroppableColumn({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-destructive">
+              {/* WIRED ONCLICK TO RECTIVE PROP METHOD HERE */}
+              <DropdownMenuItem 
+                className="text-destructive cursor-pointer"
+                onClick={handleDeleteClick}
+              >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete Column
               </DropdownMenuItem>
@@ -141,6 +156,7 @@ function DroppableColumn({
               key={key}
               job={{ ...job, columnId: job.columnId || column._id }}
               columns={sortedColumns}
+              onDeleteJob={onDeleteJob}
             />
           ))}
         </SortableContext>
@@ -154,9 +170,11 @@ function DroppableColumn({
 function SortableJobCard({
   job,
   columns,
+  onDeleteJob,
 }: {
   job: JobApplication;
   columns: Column[];
+  onDeleteJob: (jobId: string, colId: string) => Promise<void>;
 }) {
   const {
     attributes,
@@ -184,14 +202,17 @@ function SortableJobCard({
         job={job}
         columns={columns}
         dragHandleProps={{ ...attributes, ...listeners }}
+        onDelete={onDeleteJob}
       />
     </div>
   );
 }
 
-export default function KanbanBoard({ board}: KanbanBoardProps) {
+export default function KanbanBoard({ board }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const { columns, moveJob } = useBoard(board);
+  
+  // EXTRACTED removeColumn FUNCTION DIRECTLY FROM DESTRUCTURED HOOK MACHINE
+  const { columns, moveJob, removeJob, removeColumn } = useBoard(board);
 
   const sortedColumns = columns?.sort((a, b) => a.order - b.order) || [];
 
@@ -235,7 +256,6 @@ export default function KanbanBoard({ board}: KanbanBoardProps) {
 
     if (!draggedJob || !sourceColumn) return;
 
-    // Check if dropped in a column or another job
     const targetColumn = sortedColumns.find((col) => col._id === overId);
     const targetJob = sortedColumns
       .flatMap((col) => col.jobApplications || [])
@@ -321,11 +341,13 @@ export default function KanbanBoard({ board}: KanbanBoardProps) {
             };
             return (
               <DroppableColumn
-                key={key}
+                key={col._id || key}
                 column={col}
                 config={config}
                 boardId={board._id}
                 sortedColumns={sortedColumns}
+                onDeleteJob={removeJob}
+                onDeleteColumn={removeColumn} // Passed hook mechanism into iteration map
               />
             );
           })}

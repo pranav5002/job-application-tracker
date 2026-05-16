@@ -55,7 +55,6 @@ export async function createJobApplication(data: JobApplicationData) {
   }
 
   // Verify column belongs to board
-
   const column = await Column.findOne({
     _id: columnId,
     boardId: boardId,
@@ -115,6 +114,8 @@ export async function updateJobApplication(
   if (!session?.user) {
     return { error: "Unauthorized" };
   }
+
+  await connectDB();
 
   const jobApplication = await JobApplication.findById(id);
 
@@ -235,12 +236,14 @@ export async function updateJobApplication(
   return { data: JSON.parse(JSON.stringify(updated)) };
 }
 
-export async function deleteJobApplication(id: string) {
+export async function deleteJobApplication(id: string, columnId?: string) {
   const session = await getSession();
 
   if (!session?.user) {
     return { error: "Unauthorized" };
   }
+
+  await connectDB();
 
   const jobApplication = await JobApplication.findById(id);
 
@@ -252,11 +255,52 @@ export async function deleteJobApplication(id: string) {
     return { error: "Unauthorized" };
   }
 
-  await Column.findByIdAndUpdate(jobApplication.columnId, {
+  // Use explicitly passed columnId or fall back to document content definition reference
+  const targetColumnId = columnId || jobApplication.columnId;
+
+  await Column.findByIdAndUpdate(targetColumnId, {
     $pull: { jobApplications: id },
   });
 
   await JobApplication.deleteOne({ _id: id });
+  revalidatePath("/dashboard");
+
+  return { success: true };
+}
+
+// NEW FUNCTIONALITY: ADDED COLUMN REMOVAL MUTATION SERVICE
+export async function deleteColumn(columnId: string, boardId: string) {
+  const session = await getSession();
+
+  if (!session?.user) {
+    return { error: "Unauthorized" };
+  }
+
+  await connectDB();
+
+  // 1. Verify board exists and belongs to current authenticated user session
+  const board = await Board.findOne({ _id: boardId, userId: session.user.id });
+  if (!board) {
+    return { error: "Board not found or unauthorized access" };
+  }
+
+  // 2. Verify column exists and belongs to this board
+  const column = await Column.findOne({ _id: columnId, boardId: boardId });
+  if (!column) {
+    return { error: "Column not found" };
+  }
+
+  // 3. Clear all nested applications contained inside the column database index
+  await JobApplication.deleteMany({ columnId: columnId, userId: session.user.id });
+
+  // 4. Delete the column record document itself
+  await Column.deleteOne({ _id: columnId });
+
+  // 5. Remove the object identifier tracking node reference from parent board container array
+  await Board.findByIdAndUpdate(boardId, {
+    $pull: { columns: columnId },
+  });
+
   revalidatePath("/dashboard");
 
   return { success: true };
