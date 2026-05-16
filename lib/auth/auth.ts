@@ -13,6 +13,12 @@ export const auth = betterAuth({
   database: mongodbAdapter(db, {
     client,
   }),
+  // --- ADDED THIS TO FIX THE CORS ERROR ---
+  trustedOrigins: [
+    "https://job-application-tracker-gamma-ten.vercel.app", // Main production domain
+    "https://*.vercel.app"                                 // Dynamic preview domains
+  ],
+  // ----------------------------------------
   session: {
     cookieCache: {
       enabled: true,
