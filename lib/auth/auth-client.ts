@@ -1,6 +1,8 @@
 import { createAuthClient } from "better-auth/react";
+
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "https://job-application-tracker-gamma-ten.vercel.app",
+  // By using an empty string, Better Auth automatically uses the current relative path
+  baseURL: "", 
 });
 
-export const {signIn, signUp , signOut, useSession} = authClient;
+export const { signIn, signUp, signOut, useSession } = authClient;
