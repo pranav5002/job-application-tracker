@@ -30,12 +30,14 @@ interface JobApplicationCardProps {
   job: JobApplication;
   columns: Column[];
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
+  onDelete: (jobId: string, colId: string) => Promise<void>;
 }
 
 export default function JobApplicationCard({
   job,
   columns,
   dragHandleProps,
+  onDelete,
 }: JobApplicationCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({

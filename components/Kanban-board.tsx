@@ -357,7 +357,7 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
       <DragOverlay>
         {activeJob ? (
           <div className="opacity-50">
-            <JobApplicationCard job={activeJob} columns={sortedColumns} />
+            <JobApplicationCard job={activeJob} columns={sortedColumns} onDelete={removeJob}/>
           </div>
         ) : null}
       </DragOverlay>
