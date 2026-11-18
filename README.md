@@ -2,7 +2,7 @@
 
 A full-stack, intelligent workflow assistant built with **Next.js 16**, **TypeScript**, **MongoDB**, and **Better Auth** to help job seekers capture, organize, and track every stage of their hiring pipeline.
 
-**Live Deployment:** https://vercel.app
+**Live Deployment:** https://job-application-tracker-gamma-ten.vercel.app/
 
 ---
 
